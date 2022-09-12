@@ -1,0 +1,16 @@
+main {
+    justify-Content:"center";
+
+}
+.full-size {
+    justify-Content:"center";
+    cursor: pointer;
+    
+}
+
+.img-style {
+    width: 850px; 
+    height: 750px;
+    border-radius: 15px;
+   
+}

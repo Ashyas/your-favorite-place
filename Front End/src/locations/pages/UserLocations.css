@@ -1,0 +1,13 @@
+.add-place {
+    margin-top: 2px;
+    margin: 300px
+}
+
+.go-back {
+    cursor: pointer;
+}
+
+div {
+    cursor: pointer;
+    margin: 100px
+}
