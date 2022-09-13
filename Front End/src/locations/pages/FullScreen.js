@@ -33,10 +33,10 @@ const FullScreen = props =>{
           <div className="full-size">
             <label>{props.value.title}</label><br></br>
             <img
-              src={props.value.image}
-              alt={props.value.title + " Picture"}
-              className="img-style"
-            />
+                src={`http://localhost:5000/${props.value.image}`}
+                alt={props.title}
+                className="img-style"
+              />
           </div>
         </main>
       </React.Fragment>

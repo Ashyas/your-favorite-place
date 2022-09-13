@@ -1,33 +1,14 @@
 const {validationResult} = require("express-validator");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 
 const HttpError = require("../models/http-error");
 const User = require("../models/user");
 
-const USERS = [
-    {
-      id: "u1",
-      name: "Ash Yas",
-      email: "test1@gmail.com",
-      password: "123123"
-    },
-    {
-      id: "u2",
-      name: "Bob Mike",
-      email: "test2@gmail.com",
-      password: "456456"
-    },
-    {
-      id: "u3",
-      name: "Joe Thomas",
-      email: "test3@gmail.com",
-      password: "789789"
-    },
-
-  ];
-
 
 const getUsers = async (req, res, next) => {
+
   let usersList;
 
   try {
@@ -40,11 +21,33 @@ const getUsers = async (req, res, next) => {
 };
 
 
+const getUserById = async (req, res, next) => {
+
+  const userId = req.params.uid;
+  let user;
+    
+  try {
+    user = await User.findById(userId);
+
+  } catch (error) {
+      return next (new HttpError("Couldn't find the user", 500));
+  }
+
+  if(!user) {
+      return next(new HttpError("Could not find a user", 404));
+  }
+
+  res.json({user: user.toObject( {getters:true} )});
+}
+
+
+
 const signup = async (req, res, next) => {
+
     const errors = validationResult(req);
 
     if(!errors.isEmpty()){
-        return next(new HttpError("error occured. invalid inputs!", 422));
+      return next(new HttpError("error occured. invalid inputs!", 422));
     }
     
     const {name, email, password} = req.body;
@@ -58,14 +61,24 @@ const signup = async (req, res, next) => {
     }
     
     if(exisitingUser){
-        return next(new HttpError("email already exist!"), 422);
+        return next(new HttpError("user already exist!"), 422);
     }
+    
+   
+    let hashedPassword;
 
+    try {
+      hashedPassword = await bcrypt.hash(password, 12);
+      
+    } catch (error) {
+      return next(new HttpError("Could not generate safe password", 500));
+    }
+   
     const newUser = new User({
       name,
       email,
-      password,
-      image: "https://cdn-icons-png.flaticon.com/512/21/21104.png",
+      password: hashedPassword,
+      image: req.file.path,
       places: []
     });
 
@@ -74,11 +87,24 @@ const signup = async (req, res, next) => {
     } catch (error) {
       return next(new HttpError("Something went wrong, cannot create a user "+error, 500));
     }
+
+    let token;
+    try {
+      
+      token = await jwt.sign({userId: newUser.id, email: newUser.email}, "some_very_long_secret_string_to _encode", {expiresIn: "1h"});
+
+    } catch (error) {
+      return next(new HttpError("Something went wrong, cannot create a user "+error, 500));
+
+    }
     
-    res.status(201).json({user: newUser.toObject({ getters: true })});
+    res.status(201).json({userId: newUser.id, email: newUser.email, token: token });
   };
+
+
   
   const login = async (req, res, next) => {
+    
     const {email, password} = req.body;
     
     let exisitingUser;
@@ -90,14 +116,37 @@ const signup = async (req, res, next) => {
     }
 
 
-    if(!exisitingUser || exisitingUser.password !== password){
-        return next(new HttpError("user does not exisit."),401);
+    if(!exisitingUser ){
+        return next(new HttpError("Invalid, could not log in.", 403));
     }
 
-    res.status(200).json({message: "Logged In!", user: exisitingUser.toObject({getters: true})})
+    let isValidPassword = false;
+
+    try {
+      isValidPassword = await bcrypt.compare(password, exisitingUser.password);
+    } catch (error) {
+      return next(new HttpError("could not sign in.", 500));
+    }
+
+    if(!isValidPassword){
+      return next(new HttpError("could not sign in.", 403));
+    }
+
+
+    let token;
+    try {
+      
+      token = await jwt.sign({userId: exisitingUser.id, email: exisitingUser.email}, "some_very_long_secret_string_to _encode", {expiresIn: "1h"});
+
+    } catch (error) {
+      return next(new HttpError("Something went wrong, couldn't login "+error, 500));
+
+    }
+    res.json({userId: exisitingUser.id, email: exisitingUser.email, token: token });
 };
 
 
 exports.getUsers = getUsers;
+exports.getUserById = getUserById;
 exports.signup = signup;
 exports.login = login;

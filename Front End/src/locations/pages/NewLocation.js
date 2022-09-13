@@ -3,6 +3,7 @@ import { useNavigate  } from "react-router-dom";
 
 import { VALIDATOR_MINLENGTH, VALIDATOR_REQUIRE } from "../../shared/util/validators";
 import LoadingSpinner from "../../shared/components/UiElements/LoadingSpinner";
+import ImageUplaod from "../../shared/components/FormElements/ImageUplaod";
 import ErrorModal from "../../shared/components/UiElements/ErrorModal";
 import Button from "../../shared/components/FormElements/Button";
 import Input from "../../shared/components/FormElements/Input";
@@ -13,6 +14,7 @@ import "./LocationForm.css";
 
 
 const NewLocation = () => {
+    
     const auth = useContext(AuthContext);
     const {isLoading, error, sendRequest, clearError} = useHttpClient();
     const [formState, inputHandler] = useForm({
@@ -27,6 +29,10 @@ const NewLocation = () => {
         address: {
             value: '',
             isValid: false
+        },
+        image: {
+            value: null,
+            isValid: false
         }
     }, false);
 
@@ -35,16 +41,17 @@ const NewLocation = () => {
     const submitHandler = async event => {
         event.preventDefault();
         try {
+            const formData = new FormData();
+            formData.append('title', formState.inputs.title.value);
+            formData.append('description', formState.inputs.description.value);
+            formData.append('address', formState.inputs.address.value);
+            formData.append('image', formState.inputs.image.value);
             
-            await sendRequest("http://localhost:5000/api/places", "POST",
-                JSON.stringify({
-                    title:formState.inputs.title.value,
-                    description:formState.inputs.description.value,
-                    address:formState.inputs.address.value,
-                    creator: auth.userId
-                }),
+            await sendRequest("http://localhost:5000/api/places", 
+                "POST",
+                formData,
                 {
-                    "Content-type": "application/json"
+                    Authorization: "Bearer " + auth.token
                 }
             );
             navigate('/');
@@ -74,6 +81,11 @@ const NewLocation = () => {
                 errorText="Enter a valid description! at least 5 characters" 
                 onInput= {inputHandler}
             />
+            <ImageUplaod 
+                id="image" 
+                onInput={inputHandler} 
+                // errorText="Upload an Image" 
+            />
             <Input 
                 id="address"
                 element="input" 
@@ -82,6 +94,7 @@ const NewLocation = () => {
                 errorText="Enter a valid address!" 
                 onInput= {inputHandler}
             />
+            
             <Button type="submit" disabled={!formState.isValid}>Add Place</Button>
             <Button danger to={`../${auth.userId}/places`} >Cancel</Button>
         </form>

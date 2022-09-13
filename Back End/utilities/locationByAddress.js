@@ -2,7 +2,7 @@ const axios = require("axios");
 const HttpError = require("../models/http-error");
 
 
-const API_KEY = "";
+const API_KEY = "Use_Your_Own_Google_Maps_API_KEY!!!!!!!!!";
 
 const getCoordsForAddress = async (address) => {
     

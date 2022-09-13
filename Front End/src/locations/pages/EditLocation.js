@@ -15,6 +15,7 @@ import "./LocationForm.css";
 
 
 const EditLocation = () => {
+  
     const {isLoading, error, sendRequest, clearError} = useHttpClient();
     const [laodedPlasce, setLoadedPlace] = useState();
     const placeId = useParams().placeId;
@@ -33,26 +34,30 @@ const EditLocation = () => {
     }, false);
 
     useEffect(() => {
-        const fetchPlace = async () => {
-            try {
-                const responseData = await sendRequest(
-                    `http://localhost:5000/api/places/${placeId}`
-                );
-                setLoadedPlace(responseData.place);
-                setFormData({
-                    title: {
-                        value: responseData.place.title,
-                        isValid: true
-                    },
-                    description: {
-                        value: responseData.place.description,
-                        isValid: true
-                    }
-                }, true);     
-            } catch (error) { }
-        } 
-        fetchPlace();
-    }, [sendRequest, placeId, setFormData]);
+      const fetchPlace = async () => {
+        try {
+          const responseData = await sendRequest(
+            `http://localhost:5000/api/places/${placeId}`
+          );
+          setLoadedPlace(responseData.place);
+          setFormData(
+            {
+              title: {
+                value: responseData.place.title,
+                isValid: true,
+              },
+              description: {
+                value: responseData.place.description,
+                isValid: true,
+              },
+            },
+            true
+          );
+        } catch (error) {}
+      };
+      fetchPlace();
+      }, [sendRequest, placeId, setFormData]
+    );
 
 
     const submitEditHandler = async (event) => {
@@ -67,6 +72,7 @@ const EditLocation = () => {
             }),
             {
               "Content-Type": "application/json",
+              Authorization: "Bearer " + auth.token
             }
         );
         navigate('/' + auth.userId + '/places');

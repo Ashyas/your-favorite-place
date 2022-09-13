@@ -30,7 +30,14 @@ const LocationItem = props => {
   const confirmDeleteHandeler = async () => {
     setConfirmModal(false);
     try {
-      await sendRequest(`http://localhost:5000/api/places/${props.id}`, 'DELETE');
+      await sendRequest(
+        `http://localhost:5000/api/places/${props.id}`, 
+        'DELETE',
+        null,
+        {
+          Authorization: "Bearer " + auth.token
+        }
+      );
       props.onDelete(props.id);
     } catch (error) {
       
@@ -39,8 +46,8 @@ const LocationItem = props => {
 
   return (
     <React.Fragment>
-      <ErrorModal error={error} onClear={clearError}  />
-      <ModalWindow 
+      <ErrorModal error={error} onClear={clearError} />
+      <ModalWindow
         show={showMap}
         onCancel={closeMapHandler}
         header={props.address}
@@ -52,40 +59,54 @@ const LocationItem = props => {
           <Map center={props.coordinates} zoom={16} />
         </div>
       </ModalWindow>
-      {isFullScreen && 
-        <FullScreen value={props}/>
-      }
-      {!isFullScreen &&
-      <li className="place-item">
-        <Card className="place-item__content">
-          {isLoading && <LoadingSpinner asOverlay />}
-          <div className="place-item__image" onClick={showFullScreen} >
-            <img src={props.image} alt={props.title} />
-          </div>
-          <div className="place-item__info">
-            <h2>{props.title}</h2>
-            <h3>{props.address}</h3>
-            <p>{props.description}</p>
-          </div>
-          <div className="place-item__actions">
-            <Button inverse onClick={openMapHandler}>View On Map</Button>
-            {auth.userId === props.creatorId && <Button to={`/places/${props.id}`}>Edit</Button>}
-            {auth.userId === props.creatorId && <Button danger onClick={showDeleteWarning}>Delete</Button>}
-          </div>
-        </Card>
-      </li>
-      }
-      <ModalWindow 
-        show={showConfirmModal} 
+      {isFullScreen && <FullScreen value={props} />}
+      {!isFullScreen && (
+        <li className="place-item">
+          <Card className="place-item__content">
+            {isLoading && <LoadingSpinner asOverlay />}
+            <div className="place-item__image" onClick={showFullScreen}>
+              <img
+                src={`http://localhost:5000/${props.image}`}
+                alt={props.title}
+              />
+            </div>
+            <div className="place-item__info">
+              <h2>{props.title}</h2>
+              <h3>{props.address}</h3>
+              <p>{props.description}</p>
+            </div>
+            <div className="place-item__actions">
+              <Button inverse onClick={openMapHandler}>
+                View On Map
+              </Button>
+              {auth.userId === props.creatorId && (
+                <Button to={`/places/${props.id}`}>Edit</Button>
+              )}
+              {auth.userId === props.creatorId && (
+                <Button danger onClick={showDeleteWarning}>
+                  Delete
+                </Button>
+              )}
+            </div>
+          </Card>
+        </li>
+      )}
+      <ModalWindow
+        show={showConfirmModal}
         onCancel={cancelDeleteHandeler}
-        header="Are you sure?" 
-        footerClass="place-item__modal-actions" 
+        header="Are you sure?"
+        footerClass="place-item__modal-actions"
         footer={
           <React.Fragment>
-            <Button inverse onClick={cancelDeleteHandeler}>Cancel</Button>
-            <Button danger onClick={confirmDeleteHandeler}>Delete</Button>
+            <Button inverse onClick={cancelDeleteHandeler}>
+              Cancel
+            </Button>
+            <Button danger onClick={confirmDeleteHandeler}>
+              Delete
+            </Button>
           </React.Fragment>
-        }>
+        }
+      >
         <p>Are you sure you want to preceed? this action cannot be undone!</p>
       </ModalWindow>
     </React.Fragment>

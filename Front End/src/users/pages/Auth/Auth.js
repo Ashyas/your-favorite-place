@@ -1,6 +1,7 @@
 import React, { useState, useContext } from "react";
 
 import LoadingSpinner from "../../../shared/components/UiElements/LoadingSpinner";
+import ImageUplaod from "../../../shared/components/FormElements/ImageUplaod";
 import ErrorModal from "../../../shared/components/UiElements/ErrorModal";
 import Button from "../../../shared/components/FormElements/Button";
 import Input from "../../../shared/components/FormElements/Input";
@@ -41,10 +42,11 @@ const Auth = () => {
 
     const userEmail = formState.inputs.email.value;
     const userPassword = formState.inputs.password.value;
+    let responseData;
 
     if (isLoginMode) {
       try {
-        const responseData = await sendRequest(
+        responseData = await sendRequest(
           "http://localhost:5000/api/users/login",
           "POST",
           JSON.stringify({
@@ -55,27 +57,26 @@ const Auth = () => {
             "content-Type": "application/json",
           }
         );
-
-        auth.login(responseData.user.id);
       } catch (error) {}
     } else {
       try {
         const userName = formState.inputs.name.value;
-        const responseData = await sendRequest(
+        const userImage = formState.inputs.image.value;
+
+        const formData = new FormData();
+        formData.append('name', userName);
+        formData.append('email', userEmail);
+        formData.append('password', userPassword);
+        formData.append('image', userImage);
+
+        responseData = await sendRequest(
           "http://localhost:5000/api/users/signup",
           "POST",
-          JSON.stringify({
-            name: userName,
-            email: userEmail,
-            password: userPassword,
-          }),
-          {
-            "content-Type": "application/json",
-          }
+          formData
         );
-        auth.login(responseData.user.id);
       } catch (error) {}
     }
+    auth.login(responseData.userId, responseData.token);
   };
 
   const onSwitchModeHandler = () => {
@@ -84,6 +85,7 @@ const Auth = () => {
         {
           ...formState.inputs,
           name: undefined,
+          image: undefined
         },
         formState.inputs.email.isValid && formState.inputs.password.isValid
       );
@@ -95,6 +97,10 @@ const Auth = () => {
             value: "",
             isValid: false,
           },
+          image: {
+            value: null,
+            isValid: false
+          }
         },
         false
       );
@@ -123,6 +129,13 @@ const Auth = () => {
               validators={[VALIDATOR_REQUIRE()]}
               errorText="Please enter your a name"
               onInput={inputHandler}
+            />
+          )}
+          {!isLoginMode && (
+            <ImageUplaod 
+              center 
+              onInput={inputHandler} 
+              id="image"
             />
           )}
           <Input

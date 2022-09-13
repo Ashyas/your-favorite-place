@@ -1,3 +1,4 @@
+const fs = require("fs");
 const mongoose = require("mongoose");
 const {validationResult} = require("express-validator");
 
@@ -8,6 +9,7 @@ const getCoordsForAddress = require("../utilities/locationByAddress");
 
 
 const getPlaces = async (req, res, next) => {
+
     let placesList;
     
     try {
@@ -23,6 +25,7 @@ const getPlaces = async (req, res, next) => {
 
 
 const getPlaceById = async (req, res, next) =>{
+
     const placeId = req.params.pid;
     let place;
     
@@ -42,6 +45,7 @@ const getPlaceById = async (req, res, next) =>{
 
 
 const getPlacesByUserId = async (req, res, next) =>{
+
     const userId = req.params.uid;
 
     let places;
@@ -52,7 +56,6 @@ const getPlacesByUserId = async (req, res, next) =>{
         return next (new HttpError("Couldn't find a place by this Id", 500));
     }
 
-
     if(!places || places.length === 0) {
         return next(new HttpError("Could not find a places for this userId", 404));
     }
@@ -61,13 +64,14 @@ const getPlacesByUserId = async (req, res, next) =>{
 
 
 const createPlace = async (req, res, next) => {
+
     const errors = validationResult(req);
 
     if(!errors.isEmpty()){
         return next(new HttpError("error occured. invalid inputs", 422));
     }
 
-    const {title, description, address, creator} = req.body;
+    const {title, description, address} = req.body;
     let coordinates;
 
     try{
@@ -78,17 +82,17 @@ const createPlace = async (req, res, next) => {
 
     const createdLocation = new Place({
         title,
-        creator,
+        creator: req.userData.userId,
         address,
         description,
         location: coordinates,
-        image: "https://www.stockvault.net/data/2020/01/22/272769/preview16.jpg"
+        image: req.file.path
     });
 
     let user;
 
     try {
-        user = await User.findById(creator);        
+        user = await User.findById(req.userData.userId);        
     } catch (error) {
         return next(new HttpError("creating place faild. " + error, 500));
     }
@@ -115,6 +119,7 @@ const createPlace = async (req, res, next) => {
 
 
 const updatePlace = async (req, res, next) => {
+
     const errors = validationResult(req);
 
     if(!errors.isEmpty()){
@@ -130,10 +135,14 @@ const updatePlace = async (req, res, next) => {
     } catch (error) {
        return next( new HttpError("Could not find that place" + error, 500)); 
     }
+
+    if (place.creator.toString() !== req.userData.userId) {
+        return next( new HttpError("Not allowed to edit! use your account!" , 401)); 
+
+    }
     
     place.title = title;
     place.description = description;
-    // place.address = address;
     
     try {
         await place.save();
@@ -148,6 +157,7 @@ const updatePlace = async (req, res, next) => {
 
 
 const deletePlace = async (req, res, next) => {
+    
     const placeId = req.params.pid;
 
     let place;
@@ -163,6 +173,13 @@ const deletePlace = async (req, res, next) => {
         return next(new HttpError("Could not find the place to delete. ", 404));
     }
 
+    if (place.creator.id !== req.userData.userId) {
+        return next( new HttpError("Not allowed to delete! use your account!" , 401)); 
+
+    }
+
+    const imagePath = place.image;
+
     try {
         const sess = await mongoose.startSession();
         sess.startTransaction();
@@ -174,6 +191,7 @@ const deletePlace = async (req, res, next) => {
     } catch (error) {
         return next(new HttpError("Could not delete the place. " + error, 500));
     }
+    fs.unlink(imagePath, err => console.log(err));
 
     res.status(200).json({message: "The Place has been Deleted"});
 }

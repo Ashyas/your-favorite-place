@@ -4,6 +4,7 @@ import { validate } from "../../util/validators";
 import "./Input.css";
 
 const inputReducer = (state, action) => {
+    
     switch (action.type) {
         case 'CHANGE' :
             return {

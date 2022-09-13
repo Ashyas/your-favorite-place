@@ -57,7 +57,7 @@ const UserLocations = () => {
             )}
         </div>
 
-        {!isHomePage && loadedPlaces && (
+        {!isHomePage && loadedPlaces && userId === auth.userId  && (
           <div className="center">
             <Button inverse to="../places/new">
               <AiOutlinePlus /> Add New
